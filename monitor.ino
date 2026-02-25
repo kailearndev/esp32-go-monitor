@@ -12,6 +12,14 @@ static lv_color_t buf[screenWidth * 40];
 #define MIC_PIN 4
 #define MIC_THRESHOLD 2500
 
+// Bảng màu Oh My Zsh (Tokyo Night vibe)
+#define OMZ_GREEN lv_color_hex(0x98C379)
+#define OMZ_CYAN lv_color_hex(0x61DAFB)
+#define OMZ_PURPLE lv_color_hex(0xC678DD)
+#define OMZ_YELLOW lv_color_hex(0xE5C07B)
+#define OMZ_RED lv_color_hex(0xE06C75)
+#define OMZ_GRAY lv_color_hex(0x666666)
+
 bool isPanicking = false;
 unsigned long panicEndTime = 0;
 unsigned long lastActivityTime = 0;
@@ -151,44 +159,41 @@ void yawn_anim()
 
 void apply_state_ui(String tech)
 {
-    lv_color_t color = lv_color_hex(0xFFFFFF);
+    lv_color_t eye_color = lv_color_hex(0xFFFFFF); // Giữ mắt trắng minimalist
+    lv_color_t text_color = OMZ_GREEN;
     String txt = "SYSTEM READY";
-    lv_color_t tech_color = lv_color_hex(0x888888);
 
     if (isPanicking)
     {
-        color = lv_color_hex(0xFFD300);
-        txt = "AHHH! LOUD NOISE!";
+        eye_color = OMZ_YELLOW;
+        text_color = OMZ_YELLOW;
+        txt = "NOISE DETECTED!";
         smooth_size(20, 70, 10, 150);
     }
     else if (current_state == "THINKING")
     {
-        color = lv_color_hex(0xFFFFFF); // Giữ trắng cho minimalist
+        text_color = OMZ_YELLOW;
         txt = "SYNCING REPO...";
         smooth_size(40, 15, 8, 300);
         smooth_look(15, -20, 300);
     }
     else if (current_state == "CODING")
     {
-        color = lv_color_hex(0xFFFFFF);
+        text_color = OMZ_CYAN;
         txt = "WORKSPACE ACTIVE";
         smooth_size(50, 35, 10, 300);
-        if (tech == "NEXT.JS")
-            tech_color = lv_color_hex(0x61DAFB);
-        else if (tech == "GOLANG")
-            tech_color = lv_color_hex(0x00ADD8);
-        else
-            tech_color = lv_color_hex(0xFFFFFF);
     }
     else if (current_state == "STRESS")
     {
-        color = lv_color_hex(0xFF3300); // Stress vẫn để đỏ cho dễ nhận biết
+        eye_color = OMZ_RED;
+        text_color = OMZ_RED;
         txt = "SYSTEM OVERLOAD!";
         smooth_size(45, 45, 5, 300);
     }
     else if (current_state == "NIGHT")
     {
-        color = lv_color_hex(0x444444); // Màu xám tối
+        eye_color = OMZ_GRAY;
+        text_color = OMZ_GRAY;
         txt = "SLEEPING...";
         smooth_size(50, 8, 4, 500);
     }
@@ -198,10 +203,10 @@ void apply_state_ui(String tech)
             smooth_size(50, 60, 20, 300);
     }
 
-    lv_obj_set_style_bg_color(eye_l, color, 0);
-    lv_obj_set_style_bg_color(eye_r, color, 0);
+    lv_obj_set_style_bg_color(eye_l, eye_color, 0);
+    lv_obj_set_style_bg_color(eye_r, eye_color, 0);
     lv_label_set_text(status_label, txt.c_str());
-    lv_obj_set_style_text_color(status_label, color, 0);
+    lv_obj_set_style_text_color(status_label, text_color, 0);
 
     if (tech == "NONE" || current_state == "THINKING")
     {
@@ -211,7 +216,7 @@ void apply_state_ui(String tech)
     {
         String badge_str = "[ </> " + tech + " ]";
         lv_label_set_text(tech_badge, badge_str.c_str());
-        lv_obj_set_style_text_color(tech_badge, tech_color, 0);
+        lv_obj_set_style_text_color(tech_badge, OMZ_PURPLE, 0);
     }
 }
 
@@ -221,18 +226,26 @@ void update_sequential_info()
     {
         info_display_state = (info_display_state + 1) % 3;
         String display_txt = "";
+        lv_color_t info_color = OMZ_GRAY;
+
         if (info_display_state == 0)
+        {
             display_txt = LV_SYMBOL_SETTINGS " CPU: " + String(current_cpu) + "%";
+            info_color = (current_cpu > 75) ? OMZ_RED : OMZ_GREEN;
+        }
         else if (info_display_state == 1)
+        {
             display_txt = LV_SYMBOL_SD_CARD " RAM: " + String(current_ram) + "%";
+            info_color = OMZ_CYAN;
+        }
         else
+        {
             display_txt = LV_SYMBOL_CHARGE " TEMP: " + last_temp_str + (last_temp_str == "--" ? "" : "C");
+            info_color = OMZ_PURPLE;
+        }
 
         lv_label_set_text(info_label, display_txt.c_str());
-
-        // Màu label thông số sẽ đồng bộ với màu mắt hiện tại cho đẹp
-        lv_color_t theme_color = lv_obj_get_style_bg_color(eye_l, 0);
-        lv_obj_set_style_text_color(info_label, theme_color, 0);
+        lv_obj_set_style_text_color(info_label, info_color, 0);
         lastInfoSwitch = millis();
     }
 }
@@ -333,23 +346,23 @@ void parseSerial(String data)
 void create_ui()
 {
     screen_eye = lv_obj_create(NULL);
-    lv_obj_set_style_bg_color(screen_eye, lv_color_hex(0x000000), 0); // Đen sâu hơn
+    lv_obj_set_style_bg_color(screen_eye, lv_color_hex(0x000000), 0);
 
     datetime_label = lv_label_create(screen_eye);
-    lv_obj_set_style_text_color(datetime_label, lv_color_hex(0x666666), 0);
+    lv_obj_set_style_text_color(datetime_label, OMZ_GRAY, 0);
     lv_obj_set_style_text_font(datetime_label, &lv_font_montserrat_12, 0);
-    lv_obj_align(datetime_label, LV_ALIGN_TOP_RIGHT, -5, 5);
+    lv_obj_align(datetime_label, LV_ALIGN_TOP_RIGHT, -10, 10);
 
     top_greeting = lv_label_create(screen_eye);
-    lv_obj_set_style_text_color(top_greeting, lv_color_hex(0x666666), 0);
+    lv_obj_set_style_text_color(top_greeting, OMZ_PURPLE, 0);
     lv_obj_set_style_text_font(top_greeting, &lv_font_unscii_8, 0);
-    lv_obj_align(top_greeting, LV_ALIGN_TOP_LEFT, 5, 5);
+    lv_obj_align(top_greeting, LV_ALIGN_TOP_LEFT, 10, 10);
 
-    // Thêm thanh Separator ngang cho chuyên nghiệp
+    // Separator mờ ảo hơn
     lv_obj_t *sep = lv_obj_create(screen_eye);
     lv_obj_set_size(sep, 300, 1);
-    lv_obj_align(sep, LV_ALIGN_TOP_MID, 0, 25);
-    lv_obj_set_style_bg_color(sep, lv_color_hex(0x1A1A1A), 0);
+    lv_obj_align(sep, LV_ALIGN_TOP_MID, 0, 32);
+    lv_obj_set_style_bg_color(sep, lv_color_hex(0x333333), 0);
     lv_obj_set_style_border_width(sep, 0, 0);
 
     auto setup_eye_obj = [&](lv_obj_t *&e, int x)
@@ -363,17 +376,15 @@ void create_ui()
     setup_eye_obj(eye_r, 45);
 
     tech_badge = lv_label_create(screen_eye);
-    lv_obj_set_style_text_font(tech_badge, &lv_font_unscii_8, 0);
     lv_obj_align(tech_badge, LV_ALIGN_CENTER, 0, 35);
 
     status_label = lv_label_create(screen_eye);
     lv_obj_set_style_text_font(status_label, &lv_font_unscii_8, 0);
-    lv_obj_align(status_label, LV_ALIGN_BOTTOM_MID, 0, -35);
+    lv_obj_align(status_label, LV_ALIGN_BOTTOM_MID, 0, -38);
 
     info_label = lv_label_create(screen_eye);
     lv_obj_set_style_text_font(info_label, &lv_font_montserrat_14, 0);
-    lv_obj_set_style_text_color(info_label, lv_color_hex(0x444444), 0);
-    lv_obj_align(info_label, LV_ALIGN_BOTTOM_MID, 0, -10);
+    lv_obj_align(info_label, LV_ALIGN_BOTTOM_MID, 0, -12);
 }
 
 void setup()
